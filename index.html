@@ -34,6 +34,39 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
+        /* CSS Print Khusus untuk Printer Thermal */
+        @media print {
+            @page {
+                size: 80mm auto; /* Memaksa ukuran kertas struk */
+                margin: 0;
+            }
+
+            body * { visibility: hidden; }
+            
+            #print-area, #print-area * { 
+                visibility: visible; 
+                color: black !important; /* Memastikan teks hitam pekat */
+                font-family: 'Courier New', Courier, monospace !important; /* Font standar struk kasir */
+            }
+            
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 72mm; /* Sedikit lebih kecil dari 80mm agar margin aman di printer 80mm/58mm */
+                margin: 0;
+                padding: 2mm;
+                font-size: 10pt; /* Ukuran font yang pas untuk struk */
+                box-sizing: border-box;
+                background: white;
+            }
+
+            /* Hilangkan elemen dekoratif UI yang tidak kompatibel saat dicetak */
+            #print-area i { display: none !important; }
+            #print-area h2 { font-size: 14pt; margin-bottom: 5px; font-weight: bold; }
+            .border-dashed { border-top: 1.5px dashed black !important; border-bottom: none !important; border-left: none !important; border-right: none !important; }
+        }
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -50,13 +83,6 @@
 
         /* Mobile specific adjustments */
         @media (max-width: 767px) { .kasir-view.active { flex-direction: column; } }
-
-        /* Print formatting */
-        @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-        }
 
         /* Glassmorphism utils */
         .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.3); }
@@ -414,7 +440,6 @@
         <!-- Area Print Struk -->
         <div id="print-area" class="p-6 bg-white font-mono text-sm text-slate-800 flex flex-col">
             <div class="text-center mb-4 flex flex-col items-center">
-                <i class="fa-solid fa-cookie-bite text-3xl mb-2 text-slate-800"></i>
                 <h2 class="font-extrabold text-xl uppercase tracking-widest">DONUT SHOP</h2>
                 <p class="text-xs text-slate-500 mt-1">Struk Pembelian Resmi</p>
                 <div class="border-b-2 border-dashed border-slate-300 my-3 w-full"></div>
@@ -438,7 +463,7 @@
             <div class="flex justify-between text-xs font-bold">
                 <span>Kembalian</span><span id="rcpt-change">0</span>
             </div>
-            <div class="border-b-2 border-dashed border-slate-300 mt-5 mb-3"></div>
+            <div class="border-b-2 border-dashed border-slate-300 mt-5 mb-3 w-full"></div>
             <p class="text-center text-xs text-slate-500 italic">Terima kasih banyak atas kunjungannya! Semoga harimu semanis donat kami.</p>
         </div>
         <!-- Action Buttons -->
@@ -457,10 +482,6 @@
     <script>
         const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
         const generateID = () => 'TRX-' + Date.now().toString().slice(-6);
-
-        // Audio untuk interaksi (Base64 pendek agar tidak butuh file external)
-        const popSound = new Audio('data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NIxAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'); // Placeholder silent audio, diganti efek scale di UI agar tidak error di iframe
-        const playPop = () => { /* Audio disabled untuk kompatibilitas browser/iframe, diganti dengan UI feedback */ };
 
         // Data Default dengan Kategori
         const defaultProducts = [
@@ -643,7 +664,7 @@
                                 </div>
                                 <div class="flex items-center bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner overflow-hidden">
                                     <button onclick="app.changeQty(${item.id}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white hover:bg-brand-500 transition-colors"><i class="fa-solid fa-minus text-[10px]"></i></button>
-                                    <span class="w-8 text-center text-xs font-bold dark:text-white">${item.qty}</span>
+                                    <span class="w-6 text-center text-xs font-bold dark:text-white">${item.qty}</span>
                                     <button onclick="app.changeQty(${item.id}, 1)" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white hover:bg-brand-500 transition-colors"><i class="fa-solid fa-plus text-[10px]"></i></button>
                                 </div>
                             </div>
@@ -967,12 +988,12 @@
                 XLSX.writeFile(wb, `Laporan_Penjualan_Donut_${Date.now()}.xlsx`);
             },
 
-            // --- DASHBOARD ANALITIK (Logic Baru Berdasarkan Permintaan) ---
+            // --- DASHBOARD ANALITIK ---
             
             // Helper: Dapatkan hari Senin dari suatu tanggal
             getMonday(d) {
                 d = new Date(d);
-                let day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6:1); // adjust if Sunday
+                let day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6:1); // sesuaikan jika hari Minggu
                 return new Date(d.setDate(diff));
             },
 
@@ -998,8 +1019,6 @@
 
                     filtered = this.transactions.filter(t => {
                         const td = new Date(t.date);
-                        // Cek apakah tanggal t berada dalam minggu tersebut
-                        // Reset time for comparison
                         const tdDate = new Date(td.getFullYear(), td.getMonth(), td.getDate()).getTime();
                         const monDate = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate()).getTime();
                         const sunDate = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate()).getTime();
@@ -1009,7 +1028,7 @@
                     filtered.forEach(t => {
                         const td = new Date(t.date);
                         let dayIdx = td.getDay() - 1; // 0=Senin, 6=Minggu
-                        if (dayIdx === -1) dayIdx = 6; // Sunday
+                        if (dayIdx === -1) dayIdx = 6; // Minggu
                         dataTrend[dayIdx] += t.total; // Menambahkan TOTAL PEMBELIAN
                     });
 
@@ -1021,7 +1040,7 @@
                     const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
                     labelPeriod = `${monthNames[month]} ${year}`;
                     
-                    // Setup Array 5 Minggu (Asumsi max 5 minggu per bulan)
+                    // Setup Array 5 Minggu
                     labelsTrend = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4', 'Minggu 5'];
                     dataTrend = [0, 0, 0, 0, 0];
 
@@ -1032,9 +1051,8 @@
 
                     filtered.forEach(t => {
                         const td = new Date(t.date);
-                        // Simple week grouping based on date
                         let weekIdx = Math.floor((td.getDate() - 1) / 7);
-                        if (weekIdx > 4) weekIdx = 4; // limit to 5 weeks
+                        if (weekIdx > 4) weekIdx = 4; // batasi maksimal indeks 4
                         dataTrend[weekIdx] += t.total; // Menambahkan TOTAL PEMBELIAN
                     });
                 }
@@ -1075,15 +1093,14 @@
                 Chart.defaults.color = textColor;
                 Chart.defaults.font.family = "'Quicksand', sans-serif";
 
-                // Hancurkan Chart lama
+                // Hancurkan Chart lama sebelum render ulang untuk mencegah resizing bug / lag
                 if(this.chartSales) this.chartSales.destroy();
                 if(this.chartTrend) this.chartTrend.destroy();
 
                 const ctxTrend = document.getElementById('chart-trend').getContext('2d');
                 const ctxSales = document.getElementById('chart-sales').getContext('2d');
 
-                // --- 1. Bar Chart (Total Pembelian) Mirip Gambar Referensi ---
-                // Buat array warna berulang dari chartColors
+                // --- 1. Bar Chart (Total Pembelian) Multiwarna Sesuai Gambar Referensi ---
                 const bgColorsBar = dataTrend.map((_, i) => chartColors[i % chartColors.length]);
 
                 this.chartTrend = new Chart(ctxTrend, {
@@ -1094,7 +1111,7 @@
                             label: 'Total Pembelian (Rp)', 
                             data: dataTrend, 
                             backgroundColor: bgColorsBar,
-                            borderRadius: 4
+                            borderRadius: 6
                         }] 
                     },
                     options: { 
@@ -1118,13 +1135,13 @@
                     }
                 });
 
-                // --- 2. Pie Chart (Proporsi Produk) ---
+                // --- 2. Doughnut Chart (Proporsi Produk) ---
                 const pieLabels = Object.keys(itemCounts);
                 const pieData = Object.values(itemCounts);
                 const pastelColors = ['#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa', '#fb7185', '#38bdf8', '#a3e635'];
 
                 this.chartSales = new Chart(ctxSales, {
-                    type: 'doughnut', // Doughnut lebih menarik visualnya
+                    type: 'doughnut', 
                     data: { 
                         labels: pieLabels.length ? pieLabels : ['Kosong'], 
                         datasets: [{ 
@@ -1138,7 +1155,7 @@
                         maintainAspectRatio: false, 
                         cutout: '65%',
                         plugins: { 
-                            legend: { position: 'bottom', labels: { padding: 20, boxWidth: 12, usePointStyle: true } } 
+                            legend: { position: 'bottom', labels: { padding: 15, boxWidth: 10, usePointStyle: true } } 
                         } 
                     }
                 });
